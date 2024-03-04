@@ -1,50 +1,50 @@
 from flask import Flask, render_template, request, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
+from datetime import date
 
 app = Flask(__name__)
 
-# /// = relative path, //// = absolute path
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
-
-class Todo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100))
-    complete = db.Column(db.Boolean)
-
+# hardcoded as of now, will connect flask to mysql
+expenses = [
+    {"id": 1, "description": "Groceries", "amount": 60.5, "date": "2024-03-01", "category": "Food"},
+    {"id": 2, "description": "Internet", "amount": 30.0, "date": "2024-03-02", "category": "Utilities"},
+    {"id": 3, "description": "Rent", "amount": 1200, "date": "2024-03-03", "category": "Housing"}
+]
 
 @app.route("/")
 def home():
-    todo_list = Todo.query.all()
-    return render_template("base.html", todo_list=todo_list)
-
+    total_expense = sum(expense["amount"] for expense in expenses)
+    return render_template("index.html", expenses=expenses, total_expense=total_expense)
 
 @app.route("/add", methods=["POST"])
 def add():
-    title = request.form.get("title")
-    new_todo = Todo(title=title, complete=False)
-    db.session.add(new_todo)
-    db.session.commit()
+    # New id for every expense that arises
+    new_id = max(expense["id"] for expense in expenses) + 1 if expenses else 1
+    new_expense = {
+        "id": new_id,
+        "description": request.form["description"],
+        "amount": float(request.form["amount"]),
+        "date": request.form["date"],
+        "category": request.form["category"]
+    }
+    expenses.append(new_expense)
     return redirect(url_for("home"))
 
-
-@app.route("/update/<int:todo_id>")
-def update(todo_id):
-    todo = Todo.query.filter_by(id=todo_id).first()
-    todo.complete = not todo.complete
-    db.session.commit()
+@app.route("/update/<int:expense_id>", methods=["POST"])
+def update(expense_id):
+    for expense in expenses:
+        if expense["id"] == expense_id:
+            expense["description"] = request.form.get("description", expense["description"])
+            expense["amount"] = float(request.form.get("amount", expense["amount"]))
+            expense["date"] = request.form.get("date", expense["date"])
+            expense["category"] = request.form.get("category", expense["category"])
+            break
     return redirect(url_for("home"))
 
-
-@app.route("/delete/<int:todo_id>")
-def delete(todo_id):
-    todo = Todo.query.filter_by(id=todo_id).first()
-    db.session.delete(todo)
-    db.session.commit()
+@app.route("/delete/<int:expense_id>")
+def delete(expense_id):
+    global expenses
+    expenses = [expense for expense in expenses if expense["id"] != expense_id]
     return redirect(url_for("home"))
 
 if __name__ == "__main__":
-    db.create_all()
     app.run(debug=True)
