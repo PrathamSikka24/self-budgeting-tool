@@ -1,78 +1,70 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-import uuid
-from datetime import datetime
+from flask import Flask, jsonify, request
+import mysql.connector
+from mysql.connector import Error
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///yourdatabase.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
+# Load environment variables from .env file
+load_dotenv()
 
-# Routes
-@app.route('/accounts', methods=['POST'])
-def add_account():
-    data = request.get_json()
-    new_account = Account(
-        account_number=data['account_number'],
-        account_holder=data['account_holder'],
-        account_type=data['account_type'],
-        balance=data['balance']
-    )
-    db.session.add(new_account)
-    db.session.commit()
-    return jsonify({'message': 'Account created successfully'}), 201
+DATABASE_CONFIG = {
+    'host': os.getenv('DB_HOST'),
+    'database': os.getenv('DB_DATABASE'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD')
+}
+
+def get_db_connection():
+    try:
+        conn = mysql.connector.connect(**DATABASE_CONFIG)
+        if conn.is_connected():
+            return conn
+    except Error as e:
+        print(f"Error connecting to MySQL Database: {e}")
+        return None
 
 @app.route('/accounts', methods=['GET'])
 def get_accounts():
-    accounts = Account.query.all()
-    output = []
-    for account in accounts:
-        account_data = {
-            'id': account.id,
-            'account_number': account.account_number,
-            'account_holder': account.account_holder,
-            'account_type': account.account_type,
-            'balance': str(account.balance)  # Convert Decimal to string for JSON serialization
-        }
-        output.append(account_data)
-    return jsonify({'accounts': output}), 200
-
-@app.route('/transactions', methods=['POST'])
-def add_transaction():
-    data = request.get_json()
-    new_transaction = Transaction(
-        account_id=data['account_id'],
-        payee=data['payee'],
-        category=data['category'],
-        amount=data['amount'],
-        type=data['type'],
-        description=data.get('description', '')
-    )
-    db.session.add(new_transaction)
-    db.session.commit()
-    return jsonify({'message': 'Transaction recorded successfully'}), 201
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM accounts')
+        accounts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(accounts)
+    else:
+        return jsonify({"error": "Database connection failed"}), 500
 
 @app.route('/transactions', methods=['GET'])
 def get_transactions():
-    transactions = Transaction.query.all()
-    output = []
-    for transaction in transactions:
-        transaction_data = {
-            'id': transaction.id,
-            'date': transaction.date.isoformat(),
-            'account_id': transaction.account_id,
-            'payee': transaction.payee,
-            'category': transaction.category,
-            'amount': str(transaction.amount),
-            'type': transaction.type,
-            'description': transaction.description
-        }
-        output.append(transaction_data)
-    return jsonify({'transactions': output}), 200
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)  # Use `dictionary=True` to get results as dictionaries
+        cursor.execute('SELECT * FROM transactions')
+        transactions = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(transactions)
+    else:
+        return jsonify({"error": "Database connection failed"}), 500
 
+@app.route('/transactions', methods=['POST'])
+def add_transaction():
+    transaction_data = request.json
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO transactions (account_id, payee, amount, category) VALUES (%s, %s, %s, %s)',
+                       (transaction_data['account_id'], transaction_data['payee'], transaction_data['amount'], transaction_data['category']))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"message": "Transaction added successfully"}), 201
+    else:
+        return jsonify({"error": "Database connection failed"}), 500
 
 if __name__ == "__main__":
-    from models import *  
-    db.create_all()  
     app.run(debug=True)
