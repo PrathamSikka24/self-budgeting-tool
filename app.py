@@ -1,50 +1,71 @@
-from flask import Flask, render_template, request, redirect, url_for
-from datetime import date
+from flask import Flask, jsonify, request
+import mysql.connector
+from mysql.connector import Error
+import os
+from dotenv import load_dotenv
+from flask_cors import CORS 
 
 app = Flask(__name__)
+CORS(app)
 
-# hardcoded as of now, will connect flask to mysql
-expenses = [
-    {"id": 1, "description": "Groceries", "amount": 60.5, "date": "2024-03-01", "category": "Food"},
-    {"id": 2, "description": "Internet", "amount": 30.0, "date": "2024-03-02", "category": "Utilities"},
-    {"id": 3, "description": "Rent", "amount": 1200, "date": "2024-03-03", "category": "Housing"}
-]
+load_dotenv()
 
-@app.route("/")
-def home():
-    total_expense = sum(expense["amount"] for expense in expenses)
-    return render_template("index.html", expenses=expenses, total_expense=total_expense)
+DATABASE_CONFIG = {
+    'host': os.getenv('DB_HOST'),
+    'database': os.getenv('DB_DATABASE'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD')
+}
 
-@app.route("/add", methods=["POST"])
-def add():
-    # New id for every expense that arises
-    new_id = max(expense["id"] for expense in expenses) + 1 if expenses else 1
-    new_expense = {
-        "id": new_id,
-        "description": request.form["description"],
-        "amount": float(request.form["amount"]),
-        "date": request.form["date"],
-        "category": request.form["category"]
-    }
-    expenses.append(new_expense)
-    return redirect(url_for("home"))
+def get_db_connection():
+    try:
+        conn = mysql.connector.connect(**DATABASE_CONFIG)
+        if conn.is_connected():
+            return conn
+    except Error as e:
+        print(f"Error connecting to MySQL Database: {e}")
+        return None
 
-@app.route("/update/<int:expense_id>", methods=["POST"])
-def update(expense_id):
-    for expense in expenses:
-        if expense["id"] == expense_id:
-            expense["description"] = request.form.get("description", expense["description"])
-            expense["amount"] = float(request.form.get("amount", expense["amount"]))
-            expense["date"] = request.form.get("date", expense["date"])
-            expense["category"] = request.form.get("category", expense["category"])
-            break
-    return redirect(url_for("home"))
+@app.route('/accounts', methods=['GET'])
+def get_accounts():
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM accounts')
+        accounts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({"data": accounts})
+    else:
+        return jsonify({"error": "Database connection failed"}), 500
 
-@app.route("/delete/<int:expense_id>")
-def delete(expense_id):
-    global expenses
-    expenses = [expense for expense in expenses if expense["id"] != expense_id]
-    return redirect(url_for("home"))
+@app.route('/transactions', methods=['GET'])
+def get_transactions():
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM transactions')
+        transactions = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({"data": transactions})
+    else:
+        return jsonify({"error": "Database connection failed"}), 500
+
+@app.route('/transactions', methods=['POST'])
+def add_transaction():
+    transaction_data = request.json
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO transactions (account_id, payee, amount, category) VALUES (%s, %s, %s, %s)',
+                       (transaction_data['account_id'], transaction_data['payee'], transaction_data['amount'], transaction_data['category']))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"message": "Transaction added successfully"}), 201
+    else:
+        return jsonify({"error": "Database connection failed"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
