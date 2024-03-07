@@ -62,3 +62,4 @@ cd self-budget-test
 docker compose up
 ```
 
+Interact with the application UI on ``` localhost:4173 ```
