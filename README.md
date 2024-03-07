@@ -3,12 +3,14 @@
 ## Overview
 The Self-Budgeting Tool is a comprehensive web application designed to empower users with complete control over their finances. Track income, expenses, recurring and fixed costs, savings, loans, and more in one intuitive interface. Make informed decisions and achieve your financial goals with ease.
 
+![UI of Self-Budgeting-Tool](https://github.com/PrathamSikka24/self-budgeting-tool/assets/116445216/37141fd4-21af-418f-afce-1cdf57583feb)
+
 ## Features
 
 ### Income and Expenses Tracking
 - Seamlessly record and categorize your daily income and expenses for an apparent financial health overview.
 
-### Recurring and Fixed Costs Management
+
 - Easily set up and monitor your recurring payments and fixed costs, ensuring you never miss a payment.
 
 ### Savings Tracker
