@@ -56,7 +56,7 @@ MySQL is the world's most popular open-source database. With its proven performa
 **Response Handling**: After the backend processes a request, including data storage, updates, or retrieval, it generates a response that is sent back to the frontend via the middleware. The Vue.js application then updates the user interface accordingly, reflecting the new or modified data. This ensures that users have real-time access to their financial information, contributing to a seamless and efficient user experience.
 
 ## Running Locally
-```clone the repo
+``` clone the repo
 cd self-budget-test
 docker compose up ```
 
