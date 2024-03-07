@@ -57,7 +57,7 @@ MySQL is the world's most popular open-source database. With its proven performa
 
 ## Running Locally
 ```
-clone the repo
+git clone https://github.com/AdoshSingh/self-budget-test.git 
 cd self-budget-test
 docker compose up
 ```
