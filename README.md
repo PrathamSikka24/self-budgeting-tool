@@ -45,7 +45,7 @@ MySQL is the world's most popular open-source database. With its proven performa
 
 #### System Operations
 
-**Backend Communication**: When users perform actions such as recording expenses, setting up savings goals, or managing loans, these actions trigger requests to the backend, which is powered by Flask. Flask's lightweight and efficient nature allows for the quick and effective handling of these requests, ensuring a smooth operational flow within the application.
+**Backend Communication**: When users perform actions such as recording expenses, setting up savings goals, or managing loans, these actions trigger requests to the backend, which Flask powers. Flask's lightweight and efficient nature allows for the quick and effective handling of these requests, ensuring a smooth operational flow within the application.
 
 #### Data Management and Responses
 
@@ -54,3 +54,9 @@ MySQL is the world's most popular open-source database. With its proven performa
 **Caching and Performance Optimization**: While not specified in the initial setup, implementing caching with tools such as Redis could significantly enhance the application's performance. It would be particularly beneficial for quickly accessing frequently used data, such as monthly expense summaries or savings progress reports.
 
 **Response Handling**: After the backend processes a request, including data storage, updates, or retrieval, it generates a response that is sent back to the frontend via the middleware. The Vue.js application then updates the user interface accordingly, reflecting the new or modified data. This ensures that users have real-time access to their financial information, contributing to a seamless and efficient user experience.
+
+## Running Locally
+```clone the repo
+cd self-budget-test
+docker compose up```
+
