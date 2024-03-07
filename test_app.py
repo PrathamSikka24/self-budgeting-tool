@@ -37,16 +37,23 @@ class TestFlaskApi(unittest.TestCase):
     def test_add_transaction(self, mock_connect):
         mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = None  
+        mock_cursor.execute.return_value = None
         transaction_data = {
-            "account_id": 1,
+            "account_id": "1",
+            "bank_name": "Test Bank",
+            "date": "2022-01-01",
+            "type": "debit",
             "payee": "New Payee",
             "amount": 50,
             "category": "Test Category",
         }
+        
         response = self.app.post('/transactions', json=transaction_data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json, {"message": "Transaction added successfully"})
+
+        mock_cursor.execute.assert_called_once()
+        mock_connect.return_value.commit.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()
